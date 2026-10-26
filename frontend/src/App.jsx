@@ -2,12 +2,15 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import ProjectCard from "./components/ProjectCard";
+import ProjectForm from "./components/ProjectForm";
 import initialProjects from "./data/projects";
 import "./App.css";
 
 function App() {
   const [projects, setProjects] = useState(initialProjects);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   function handleToggleStatus(projectId) {
     setProjects((previousProjects) =>
@@ -20,6 +23,38 @@ function App() {
           : project,
       ),
     );
+
+    setSuccessMessage("");
+  }
+
+  function handleCreateProject(projectDetails) {
+    const duplicate = projects.some(
+      (project) =>
+        project.name.toLowerCase() === projectDetails.name.toLowerCase(),
+    );
+
+    console.log("Duplicate project name:", duplicate);
+
+    if (duplicate) {
+      setSuccessMessage("");
+      return {
+        error: "A project with this name already exists.",
+      };
+    }
+
+    const nextId = Math.max(0, ...projects.map((project) => project.id)) + 1;
+
+    const newProject = {
+      id: nextId,
+      ...projectDetails,
+      status: "active",
+    };
+
+    setProjects((previousProjects) => [...previousProjects, newProject]);
+
+    setSearchTerm("");
+    setShowForm(true);
+    setSuccessMessage(`${newProject.name} was created successfully.`);
   }
 
   const filteredProjects = projects.filter((project) =>
@@ -54,8 +89,30 @@ function App() {
               <p>Track your team's work in one place.</p>
             </div>
 
-            <span className="project-count">{projects.length} projects</span>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => {
+                setShowForm((previous) => !previous);
+                setSuccessMessage("");
+              }}
+            >
+              {showForm ? "Close form" : "+ Add project"}
+            </button>
           </div>
+
+          {successMessage && (
+            <p className="form-success" role="status">
+              {successMessage}
+            </p>
+          )}
+
+          {showForm && (
+            <ProjectForm
+              onCreateProject={handleCreateProject}
+              onCancel={() => setShowForm(false)}
+            />
+          )}
 
           <div className="summary-grid">
             <article className="summary-card">
@@ -80,9 +137,9 @@ function App() {
             <input
               id="project-search"
               type="search"
-              placeholder="Search by project name..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search by project name..."
             />
           </div>
 
